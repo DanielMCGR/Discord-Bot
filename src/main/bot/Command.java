@@ -1,3 +1,6 @@
+package bot;
+
+
 /**
  * This class serves as a blueprint for what a
  * command for the bot must have as properties.
