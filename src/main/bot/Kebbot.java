@@ -1,9 +1,8 @@
 package bot;
 
-import genshin.Genshin;
-import genshin.TextFileHandler;
-import utils.Calculator;
-import utils.YeeLight;
+import stockFish.Stockfish;
+import genshin.*;
+import utils.*;
 import com.mollin.yapi.YeelightDevice;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -20,7 +19,6 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
-
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -32,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * and other classes are called for it's usage.
  *
  * @author Daniel Rocha
- * @version 1.0
+ * @version 1.1
  * @see CommandList
  * @see Command
  * @see Genshin
@@ -42,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 public class Kebbot extends ListenerAdapter implements EventListener {
     private static JDA MainJDA;
     static YeelightDevice Light;
+    protected static GamesContainer container = new GamesContainer();
+    public static final Stockfish client = new Stockfish();
     private final String KebakkID="123456789123456789";
     static final File slyData = new File("Location of file number 2");
     static final File myData = new File("Location of file number 1");
@@ -57,7 +57,6 @@ public class Kebbot extends ListenerAdapter implements EventListener {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-
         JDA jda = JDABuilder.createDefault("Insert the discord server token here!")
                 .setChunkingFilter(ChunkingFilter.ALL) // enable member chunking for all guilds
                 .setMemberCachePolicy(MemberCachePolicy.ALL) // ignored if chunking enabled
@@ -72,8 +71,6 @@ public class Kebbot extends ListenerAdapter implements EventListener {
         }
         jda.getPresence().setActivity(Activity.watching("Kebbot.Help"));
         jda.addEventListener(new Kebbot());
-
-
     }
 
     /**
@@ -139,6 +136,11 @@ public class Kebbot extends ListenerAdapter implements EventListener {
         if(CommandList.isCommand(MRE)) {
             CommandList.execCommand(MRE);
         }
+        //checks if the message is related to one of the games
+        try {
+            if(container.validChessCommand(MRE)) container.execChessCommand(MRE);
+            if(container.validCWCommand(MRE)) container.execCWCommand(MRE);
+        } catch (Exception e) {e.printStackTrace();}
         //just some random messages to stir some confusion among the server's members
         int random = (int)(Math.random()*8193);
         if (random == 420) {
@@ -225,7 +227,7 @@ public class Kebbot extends ListenerAdapter implements EventListener {
         if(raw(MRE).toLowerCase().startsWith("genshin")) {
             File data = new File("");
             if(author.getId().equals(KebakkID)) data = myData;
-            if(author.getId().equals("124221067672813569")) data = slyData; //sly data
+            if(author.getId().equals("slyID")) data = slyData; //sly data
             if(raw(MRE).toLowerCase().startsWith("genshin get date")){
                     if(raw(MRE).substring(17).split("/").length==3||raw(MRE).substring(17).split(" ").length==3) {
                         int[] date = new int[3];
