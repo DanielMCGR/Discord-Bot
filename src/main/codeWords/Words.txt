@@ -1,0 +1,15 @@
+this
+is
+an
+example
+for
+a
+word
+list
+all
+words
+should
+be
+one
+per
+line
