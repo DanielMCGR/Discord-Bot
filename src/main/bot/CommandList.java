@@ -1,29 +1,30 @@
 package bot;
 
+import casino.BlackJack;
+import casino.Currency;
+import casino.EuroMillions;
 import chess.*;
 import codeWords.*;
+import net.dv8tion.jda.api.entities.*;
 import stockFish.Stockfish;
 import net.dv8tion.jda.api.EmbedBuilder;
 import utils.Calculator;
 import utils.YeeLight;
 import com.mollin.yapi.enumeration.YeelightProperty;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Icon;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionRemoveEvent;
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
+import websiteScrapper.other.Container;
+import websiteScrapper.other.MAL;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 // Admin Commands:  .kb Default  .kb Nick  .kb Avatar  .kb data
@@ -36,22 +37,25 @@ import java.util.concurrent.TimeUnit;
  * Note: Read the JDA documentation
  *
  * @author Daniel Rocha
- * @version 1.0
- * @see Bot
+ * @version 1.2
+ * @see Kebbot
  * @see Command
  * @see net.dv8tion.jda.api.JDA
  */
 public class CommandList {
+    private static ArrayList<Container> animeList = new ArrayList<>();
     private static GamesContainer container = Kebbot.container;
     static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM);
-    private static HashMap<String, Command> commandList = new HashMap<String, Command>() {{
+    private static LinkedHashMap<String, Command> commandList = new LinkedHashMap<>() {{
         //first are all the admin/owner commands
         put("default", new Command("default", true, "Changes the profile picture of the bot to the default one\nExample Usage: .kb default"));
         put("nick", new Command("nick", true, "Changes the nickname of the bot to a different one\nExample Usage: .kb nick new_nick"));
         put("avatar", new Command("avatar", true, "Changes the avatar of the bot to a different one\nExample Usage: .kb avatar URL_of_Avatar"));
         put("data", new Command("data", true, "Gets some data from the server so the bot can work better :D\nExample Usage: .kb data"));
+        put("search", new Command("search", true, "Searches the current channel for the given parameter  -  Example Usage: .kb search keyword one and something else"));
         put("ping", new Command("ping", true, "Pings the bot, getting the response in ms\nExample Usage: .kb ping"));
         put("lights", new Command("lights", true, "Gives some options to control lights (Yeelight)\nExample Usage: .kb lights"));
+        put("set_wallet", new Command("set_wallet", true, "Sets a player's wallet value  -  Example Usage: .kb set_wallet 1000"));
         //these are the other commands, reminder that the constructor for the command class is: (Long[] allowedServersID, Long[] allowedTextChannelsID, Long[] roleIDs, Long[] userIDs, String[] aliases, String name, boolean enabled, boolean canDisable)
         put("chess", new Command("chess", false, "Challenge someone (or the Computer) to a Chess game!\nExample Usage: .kb chess @User   or   .kb chess CPU"));
         put("cw_start", new Command("cw_start", false, "Starts a CodeWords game!\nExample Usage: .kb cw_start"));
@@ -62,6 +66,12 @@ public class CommandList {
         put("self_destruct", new Command("self_destruct", false, "I wonder what this one does...\n Example usage: .kb self_destruct"));
         put("flip", new Command("flip", false, "When you just can't handle someone anymore :V\n Example usage: .kb flip @User"));
         put("join_date", new Command("join_date", false, "This way you can know for how long you've been here!\n Example usage: .kb join_date   or   .kb join_date @user"));
+        put("mal", new Command("mal", false, "Collection of commands for searching the My Anime List website! (currently under construction)  -   Use the command mal_help for example usages"));
+        put("mal_help", new Command("mal_help", false, "Lists all possible arguments for mal command (currently under construction)  -   Usage: .kb mal_help"));
+        put("blackjack", new Command("blackjack", false, "Starts a new BlackJack game, with the given wager! (currently under construction)  -   Usage: .kb blackjack 500"));
+        put("coin_flip", new Command("coin_flip", false, "Starts a new Coin flip game, with the given wager!  -   Usage: .kb coin_flip 500 heads"));
+        put("euro_millions", new Command("euro_millions", false, "Play the euro millions game, and test your luck! (Wagers 2.50€)!  -   Usage: .kb euro_millions 13 26 47 33 50 1 2   or   .kb euro_millions 13 26 47 33 50 1 2 multi 20"));
+        put("wallet", new Command("wallet", false, "Gets the amount of money on your wallet (Use it in the Bot's features)!  -   Usage: .kb wallet"));
         put("help", new Command("help", false, "Well this one is kind of easy to get"));
     }};
     
@@ -269,6 +279,24 @@ public class CommandList {
                     System.out.print("; ");
                 }
             }
+            case "search" -> {
+                ArrayList<String> search = search(getArgs(raw(mre)),mre);
+                StringBuilder sb = new StringBuilder();
+                for(String string:search) {
+                    sb.append(string);
+                    sb.append("\n");
+                }
+                String out = sb.toString();
+                ArrayList<String> output = new ArrayList<>();
+                while(out.length()>2000) {
+                    output.add(out.substring(0,1999));
+                    out=out.substring(2000,out.length()-1);
+                }
+                output.add(out);
+                for(String string:output) {
+                    mre.getChannel().sendMessage(string).queue();
+                }
+            }    
             case "lights" -> {
                 if (Kebbot.Light != null) {
                     try {
@@ -287,6 +315,23 @@ public class CommandList {
                     }
                 }
             }
+            case "set_wallet" -> {
+                String[] args = getArgs(raw(mre)).split(" ");
+                if(args.length!=2)return;
+                String stringID=args[0];
+                Long id=null;
+                double value= Integer.MIN_VALUE;
+                try{
+                    stringID=stringID.replace("<@!","");
+                    stringID=stringID.replace(">","");
+                    id=Long.parseLong(stringID);
+                    value=Double.parseDouble(args[1]);
+                } catch (Exception ignored) {return;}
+                if(id!=null && value!=Integer.MIN_VALUE) {
+                    Currency.setCurrency(id,value);
+                    mre.getChannel().sendMessage("Changed amount to: "+value+"€").queue();
+                }
+            }    
             case "what_is" -> {
                 try {
                     if ((Calculator.whatIs(getArgs(raw(mre))) == Math.floor(Calculator.whatIs(getArgs(raw(mre))))) && !Double.isInfinite(Calculator.whatIs(getArgs(raw(mre))))) {
@@ -319,36 +364,167 @@ public class CommandList {
             }
             case "flip" -> {
                 String target = getArgs(raw(mre));
-                if (target.contains("Kebbot") || target.equals("<@!774809328854499388>") || target.equals("<@!286696325310054400>")) {
+                if (target.contains("Kebbot") || target.equals("Owner ID") || target.equals("Bot ID")) {
                     mre.getChannel().sendMessage("You can't flip me <@!" + mre.getAuthor().getId() + "> but guess what, Fuck You ╭∩╮(・◡・)╭∩╮").queue();
                 } else {
                     mre.getChannel().sendMessage("Dear " + target + ", Fuck You ╭∩╮(・◡・)╭∩╮").queue();
                 }
             }
+            case "mal" -> {
+                String[] args = getArgs(raw(mre)).split(" ");
+                double params1 = -1;
+                if(animeList.isEmpty()) {
+                    animeList = MAL.animeInfo(true);
+                }
+                ArrayList<Container> content;
+                if(args.length==2) {
+                    try{
+                        params1 = Double.parseDouble(args[1]);
+                    } catch (Exception e) {
+                        mre.getChannel().sendMessage("Invalid parameters").queue();
+                        return;
+                    }
+                    String season;
+                    switch (args[0]) {
+                        case "spring"-> {season="spring";}
+                        case "summer"-> {season="summer";}
+                        case "winter"-> {season="winter";}
+                        case "fall"-> {season="fall";}
+                        default -> {return;}
+                    }
+                    if(params1<1920||params1>2021) return;
+                    content=MAL.animeInfo(season,(int)params1,true);
+                }
+            }
+            case "blackjack" -> {
+                String[] args = getArgs(raw(mre)).split(" ");
+                if(args.length!=1)return;
+                if(container.getBJGameID(mre.getAuthor().getIdLong())!=-1) return;
+                int wager = Integer.MIN_VALUE;
+                try {
+                    wager = Integer.parseInt(args[0]);
+                } catch (Exception ignored) {return;}
+                if(wager== Integer.MIN_VALUE) return;
+                if(Currency.getCurrency(mre.getAuthor().getIdLong())<wager) {
+                    mre.getChannel().sendMessage("You can't bet that much, please add more money or wager a smaller value.\n(Your current currency is: "+ Currency.getCurrency(mre.getAuthor().getIdLong()) +"€)").queue();
+                    return;
+                }
+                int id=container.newBJ(mre.getAuthor().getIdLong(),wager);
+                BlackJack game = container.getBJGame(id);
+                game.setMessageChannel(mre.getChannel());
+                mre.getChannel().sendMessage("You have started a new BlackJack game!   Game ID: "+id).queue();
+                mre.getChannel().sendMessage("This is the current state of the game:\n"+game.toString()).queue();
+                String firstOver = game.firstOver();
+                if(!firstOver.equals("")) mre.getChannel().sendMessage(firstOver).queue();
+            }
+            case "coin_flip" -> {
+                String[] args = getArgs(raw(mre)).split(" ");
+                if(args.length!=2)return;
+                if(container.getBJGameID(mre.getAuthor().getIdLong())!=-1) return;
+                int wager = Integer.MIN_VALUE;
+                String sideString = args[1].toLowerCase();
+                Boolean side = null;
+                try {
+                    wager = Integer.parseInt(args[0]);
+                    if(sideString.equals("h")||sideString.equals("heads")||sideString.equals("1")||sideString.equals("true")) {
+                        side = true;
+                    }
+                    if(sideString.equals("t")||sideString.equals("tails")||sideString.equals("0")||sideString.equals("false")) {
+                        side = false;
+                    }
+                    if(side==null) return;
+                } catch (Exception ignored) {return;}
+                if(wager == Integer.MIN_VALUE) return;
+                if(Currency.getCurrency(mre.getAuthor().getIdLong())<wager) {
+                    mre.getChannel().sendMessage("You can't bet that much, please add more money or wager a smaller value.\n(Your current currency is: "+ Currency.getCurrency(mre.getAuthor().getIdLong()) +"€)").queue();
+                    return;
+                }
+                Random random = new Random();
+                boolean flip = random.nextBoolean();
+                String coinSide = flip ? "heads":"tails";
+                if(flip==side) {
+                    Currency.addCurrency(mre.getAuthor().getIdLong(),wager);
+                    mre.getChannel().sendMessage("You guessed correctly, the coin landed on "+ coinSide +"!").queue();
+                } else {
+                    Currency.removeCurrency(mre.getAuthor().getIdLong(),wager);
+                    mre.getChannel().sendMessage("You guessed incorrectly, the coin landed on "+ coinSide +"...").queue();
+                }
+            }
+            case "euro_millions" -> {
+                String[] args = getArgs(raw(mre)).split(" ");
+                if(args.length!=7&&args.length!=9) return;
+                if(args.length==9&&!args[7].toLowerCase().equals("multi")) return;
+                int[] guess = new int[7];
+                int multi = -1;
+                try {
+                    for(int i=0;i<7;i++) {
+                        guess[i]=Integer.parseInt(args[i]);
+                    }
+                    if(args.length==9) multi=Integer.parseInt(args[8]);
+                } catch (Exception ignored) { }
+                if(args.length==9) {
+                    if(multi<2) return;
+                    double total = 0;
+                    for(int i=0;i<multi;i++) {
+                        Currency.removeCurrency(mre.getAuthor().getIdLong(),2.50);
+                        EuroMillions game = new EuroMillions();
+                        total += game.hasPrize(guess);
+                    }
+                    if(total>0) {
+                        mre.getChannel().sendMessage("You won "+total+"€ in "+multi+" attempts, congratulations!").queue();
+                    } else {
+                        mre.getChannel().sendMessage("You didn't win anything, even on "+multi+" attempts, better luck next time!").queue();
+                    }
+                } else {
+                    if(EuroMillions.validGuess(guess)) {
+                        Currency.removeCurrency(mre.getAuthor().getIdLong(),2.50);
+                        EuroMillions game = new EuroMillions();
+                        double prize = game.hasPrize(guess);
+                        mre.getChannel().sendMessage("The lottery is over: "+game.toString()).queue();
+                        if(prize>0) {
+                            mre.getChannel().sendMessage("You won "+prize+"€, congratulations!").queue();
+                        } else {
+                            mre.getChannel().sendMessage("You didn't win anything, better luck next time!").queue();
+                        }
+                    }
+                }
+            }
+            case "wallet" -> {
+                double currency = Currency.getCurrency(mre.getAuthor().getIdLong());
+                mre.getChannel().sendMessage("You have "+currency+"€ on your wallet!").queue();
+            }    
             case "help" -> {
-                String out = "";
+                ArrayList<String> output = new ArrayList<>();
                 //admin gets to see all the commands
                 if (mre.getAuthor().getId().toString().equals(Command.ADMIN_ID.toString())) {
                     for (Command command : commandList.values()) {
-                        if (command.userIDs.length == 1 && Arrays.stream(command.userIDs).anyMatch(Command.ADMIN_ID::equals)) {
-                            out += "ADMIN Command: " + command.name + " ---> " + command.description + "\n\n";
+                        if (command.userIDs.length == 1 && Arrays.asList(command.userIDs).contains(Command.ADMIN_ID)) {
+                            output.add("**ADMIN - " + command.name + "** : " + command.description + "\n");
                         } else {
-                            out += "Command: " + command.name + " ---> " + command.description + "\n\n";
-                        }
-                    }
-                    //other people only get to see the rest of the commands
-                } else {
+                            output.add("**" + command.name + "** : " + command.description + "\n");
+                        } } }
+                //other people only get to see the rest of the commands
+                else {
                     for (Command command : commandList.values()) {
                         //check if its an admin command
-                        if (command.userIDs.length == 1 && Arrays.stream(command.userIDs).anyMatch(Command.ADMIN_ID::equals)) {
-                            continue;
-                        }
-                        out += "Command: " + command.name + " ---> " + command.description + "\n\n";
+                        if (command.userIDs.length == 1 && Arrays.asList(command.userIDs).contains(Command.ADMIN_ID)) continue;
+                        output.add("**" + command.name + "** : " + command.description + "\n");
+                    } }
+                //splits the message to avoid the 2000 char limit
+                while(output.size()>10) {
+                    StringBuilder out = new StringBuilder();
+                    for(int i=0;i<10;i++) {
+                        out.append(output.get(0));
+                        output.remove(0);
                     }
+                    mre.getChannel().sendMessage(out.toString()).queue();
                 }
-                mre.getChannel().sendMessage(out).queue();
+                StringBuilder out = new StringBuilder();
+                for(int i=0;i<output.size();i++) {
+                    out.append(output.get(i));
+                }
+                mre.getChannel().sendMessage(out.toString()).queue();
             }
-
             default -> System.out.println("The command is either Private or Guild exclusive");
         }
     }
@@ -396,6 +572,7 @@ public class CommandList {
                         .queue(response /* => Message */ -> response.editMessageFormat("Pong: %d ms", System.currentTimeMillis() - time).queue());
             }
             case "cw_start" -> {
+                if(container.getCWGameID(mre.getAuthor().getIdLong())!=-1) return;
                 int id=container.newCW();
                 container.getCWGame(id).setTextChannel(mre.getChannel());
                 mre.getChannel().sendMessage("CodeWords: Please click on the Plus sign below to join!   Game ID: "+id+"").queue(message -> {
@@ -835,5 +1012,45 @@ public class CommandList {
             if(memberID.equals(id)) return true;
         }
         return false;
+    }
+    
+    /**
+     * Gets the full message history of a Discord Server
+     * (given the API limitations this will take a while).
+     * Given a message it will get it's channel.
+     *
+     * @param mre the MessageReceivedEvent
+     * @return the full array of messages
+     */
+    private static ArrayList<Message> fullHistory(MessageReceivedEvent mre) {
+        ArrayList<Message> history = new ArrayList<>();
+        String oldMessageID = mre.getChannel().getLatestMessageId();
+        boolean done = false;
+        while(!done) {
+            ArrayList<Message> messages = new ArrayList<>(mre.getChannel().getHistoryBefore(oldMessageID,100).complete().getRetrievedHistory());
+            if(messages.size()<100) done=true;
+            history.addAll(messages);
+            oldMessageID=messages.get(messages.size()-1).getId();
+        }
+        return history;
+    }
+
+    /**
+     * Given a search term and a message event
+     * it will search for it on the channel history.
+     *
+     * @param search the search term
+     * @param mre the MessageReceivedEvent
+     * @return
+     */
+    private static ArrayList<String> search(String search, MessageReceivedEvent mre) {
+        ArrayList<Message> history = fullHistory(mre);
+        mre.getChannel().sendMessage("Searched in a total of "+history.size()+" messages!").queue();
+        System.out.println(history.size());
+        ArrayList<String> result = new ArrayList<>();
+        for(Message message:history) {
+            if(message.getContentRaw().toLowerCase().contains(search.toLowerCase())) result.add(message.toString());
+        }
+        return result;
     }
 }
