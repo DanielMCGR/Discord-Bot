@@ -61,7 +61,7 @@ public class CommandList {
         put("cw_start", new Command("cw_start", false, "Starts a CodeWords game!\nExample Usage: .kb cw_start"));
         put("chess_help", new Command("chess_help", false, "Gives you more information about the Chess Game!\nExample Usage: .kb chess_help"));
         put("cw_help", new Command("cw_help", false, "Gives you more information about the CodeWords Game!\nExample Usage: .kb chess_help"));
-        put("what_is", new Command("what_is", false, "Basic calculator\n Example usage: .kb what_is 5*1  (Use: + - * / ^ )"));
+        put("what_is", new Command("what_is", false, "Basic calculator  -   Example usage: .kb what_is 5 / 2  (Use: + - * / ^ )"));
         put("meter", new Command("meter", false, "Measure how much of something someone is!\n Example usage: .kb meter Happy @User"));
         put("self_destruct", new Command("self_destruct", false, "I wonder what this one does...\n Example usage: .kb self_destruct"));
         put("flip", new Command("flip", false, "When you just can't handle someone anymore :V\n Example usage: .kb flip @User"));
