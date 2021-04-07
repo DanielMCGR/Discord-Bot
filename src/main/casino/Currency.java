@@ -18,7 +18,7 @@ import java.util.Objects;
  * @see bot.CommandList
  */
 public class Currency {
-    private static final File CURRENCY = new File("C:/Users/Kebakk/IdeaProjects/Kebbot/src/main/java/casino/currency.txt");
+    private static final File CURRENCY = new File("currency.txt");
 
     /**
      * Adds a player to the database (txt file)
