@@ -19,7 +19,7 @@ Here is the full list of commands found on CommandList (currently):
 - **cw_start** : Starts a CodeWords game!  -  Example Usage: .kb cw_start
 - **chess_help** : Gives you more information about the Chess Game!  -  Example Usage: .kb chess_help
 - **cw_help** : Gives you more information about the CodeWords Game!  -  Example Usage: .kb chess_help
-- **what_is** : Basic calculator  -   Example usage: .kb what_is 5/2  (Use: + - * / ^ )
+- **what_is** : Basic calculator  -   Example usage: .kb what_is 5 / 2  (Use: + - * / ^ )
 - **meter** : Measure how much of something someone is!  -   Example usage: .kb meter Happy @User
 - **self_destruct** : I wonder what this one does...  -   Example usage: .kb self_destruct
 - **flip** : When you just can't handle someone anymore :V  -   Example usage: .kb flip @User
