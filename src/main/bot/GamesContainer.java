@@ -2,7 +2,9 @@ package bot;
 
 import chess.*;
 import codeWords.*;
+import casino.*;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import java.io.File;
 import java.util.ArrayList;
@@ -13,15 +15,17 @@ import java.util.concurrent.TimeUnit;
  * and executes most of their functions.
  *
  * @author Daniel Rocha
- * @version 1.0
+ * @version 1.2
  * @see bot.CommandList
  * @see CodeWords
  * @see Chess
+ * @see casino.BlackJack
  */
 public class GamesContainer {
     ArrayList<Chess> chessGames = new ArrayList<>();
     ArrayList<CodeWords> cwGames = new ArrayList<>();
-
+    ArrayList<BlackJack> bjGames = new ArrayList<>();
+    
 
     //CodeWords Game -+-
 
@@ -479,4 +483,89 @@ public class GamesContainer {
         return -1;
     }
 
+
+    //BlackJack Game -+-
+
+    /**
+     * Creates a new BlackJack game
+     * 
+     * @param playerID the player's ID
+     * @param wager the player's wager
+     * @return the game ID
+     */
+    public int newBJ(long playerID, int wager) {
+        BlackJack game = new BlackJack(playerID);
+        game.setWager(wager);
+        bjGames.add(game);
+        return bjGames.size()-1;
+    }
+
+    /**
+     * Checks if a command is a valid
+     * BlackJack command
+     * 
+     * @param event the MessageReceivedEvent
+     * @return if command is valid
+     */
+    public boolean validBJCommand(MessageReceivedEvent event) {
+        String args = event.getMessage().getContentRaw();
+        int gameID = getBJGameID(event.getAuthor().getIdLong());
+        if(bjGames.size()<1||gameID==-1||!bjGames.get(gameID).getMessageChannel().equals(event.getChannel())) return false;
+        return (args.startsWith("hit")||args.startsWith("stay"));
+    }
+
+    /**
+     * Executes a BlackJack command.
+     * This contains most commands
+     * besides the starting one.
+     *
+     * @param event the GuildMessageReceivedEvent
+     */
+    public void execBJCommand(MessageReceivedEvent event) {
+        int gameID = getBJGameID(event.getAuthor().getIdLong());
+        if(gameID==-1) return;
+        String[] args = event.getMessage().getContentRaw().split(" ");
+        BlackJack game = getBJGame(gameID);
+        switch (args[0]) {
+            case "hit" -> {
+                game.playerHit();
+            }
+            case "stay" -> {
+                game.dealerHit();
+            }
+        }
+        String gameOver = game.gameOver();
+        event.getChannel().sendMessage("This is the current state of the game:\n"+game.toString()).queue();
+        if(!gameOver.equals("")) {
+            event.getChannel().sendMessage(gameOver).queue();
+        }
+    }
+
+    /**
+     * Given a game ID returns
+     * that game.
+     * 
+     * @param i game ID
+     * @return the game
+     */
+    public BlackJack getBJGame(int i) {
+        return bjGames.get(i);
+    }
+
+    /**
+     * Given a player's ID checks
+     * if that player is currently
+     * on a game, and if so, gets
+     * that game's ID
+     * 
+     * @param id the player's ID
+     * @return the game
+     */
+    public int getBJGameID(long id) {
+        for(int i=0;i<bjGames.size();i++) {
+            Long pID = bjGames.get(i).getPlayerID();
+            if(pID.equals(id)) return i;
+        }
+        return -1;
+    }
 }
