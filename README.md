@@ -5,7 +5,7 @@ Link to JDA: https://github.com/DV8FromTheWorld/JDA
 
 Besides the commands found in the CommandList class, the bot also has interaction with Yeelight compatible devices and implements one of my projects that helps automate some tasks and give information to Genshin Impapct (video game) players.
 
-Here is the full list of commands (currently):
+Here is the full list of commands found on CommandList (currently):
 
 - **ADMIN - default** : Changes the profile picture of the bot to the default one  -  Example Usage: .kb default
 - **ADMIN - nick** : Changes the nickname of the bot to a different one  -  Example Usage: .kb nick new_nick
