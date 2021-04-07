@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * and other classes are called for it's usage.
  *
  * @author Daniel Rocha
- * @version 1.1
+ * @version 1.2
  * @see CommandList
  * @see Command
  * @see Genshin
@@ -131,7 +132,6 @@ public class Kebbot extends ListenerAdapter implements EventListener {
             result.setImage("Link to main image");
             MRE.getChannel().sendMessage(result.build()).queue();
         }
-
         //checks if the message is a command and executes it if it is
         if(CommandList.isCommand(MRE)) {
             CommandList.execCommand(MRE);
@@ -386,8 +386,11 @@ public class Kebbot extends ListenerAdapter implements EventListener {
      */
     @Override
     public void onMessageReceived(MessageReceivedEvent MRE) {
-        if(CommandList.isCommand(MRE)) {
-            CommandList.execCommand(MRE);
+        try {
+            if(container.validBJCommand(mre)) container.execBJCommand(mre);
+        } catch (Exception e) {e.printStackTrace();}
+        if(CommandList.isCommand(mre)) {
+            CommandList.execCommand(mre);
         }
         if(raw(MRE).equals("working bots say hi")) {
             MRE.getChannel().sendMessage("Hi!").queue();
